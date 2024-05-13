@@ -1,0 +1,116 @@
+#!/usr/bin/zsh
+
+# This file is part of the zsh-lsalias distribution (https://github.com/MerQury14092/zsh-lsalias).
+# Copyright (c) 2015 Liviu Ionescu.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+version="1.0"
+package_name="zsh-lsalias"
+
+
+stack=()
+stack_top=
+stack_ptr=0
+
+push() {
+	stack+=($1)
+	stack_ptr=$((stack_ptr+1))
+	eval_top_stack_element
+}
+
+pop() {
+	stack_ptr=$((stack_ptr-1))
+	eval_top_stack_element
+}
+
+eval_top_stack_element() {
+	stack_top=${stack[$stack_ptr]}
+}
+
+current_file=
+current_mode=print_all
+searching_alias=
+output=
+
+source() {
+	push $1
+	current_file=$1
+	builtin source $1
+	pop
+	current_file=$stack_top
+}
+
+alias() {
+	if [ $current_mode = print_all ]; then
+		echo "$current_file: alias $1"
+	else
+		output+="$(echo alias $1 defined in $current_file)\n"
+	fi
+}
+
+
+main() {
+	if [[ $# -eq 2 ]]
+	then
+		current_mode=searching
+		searching_alias=$2
+	fi
+	start_file=$1
+	if [ $1 = -d ]
+	then
+		start_file=$HOME/.zshrc
+	fi
+	source $start_file
+	if [ $current_mode = searching ]
+	then
+		res=$(echo $output | grep -E "alias $2=" | tail -1)
+		if [ -z $res ]; then
+			echo "No alias definitions for $2"
+		else
+			echo $res
+		fi
+	fi
+}
+
+help() {
+	echo
+	echo "Usage:"
+	echo " lsalias <file> [<alias>]"
+	echo " lsalias -d [<alias>]"
+	echo
+	echo "Recursively search alias definitions in file and it source files"
+	echo
+	echo "Options:"
+	echo " -h, --help		display this help"
+	echo " -d, --default		use default zsh config file (~/.zshrc)"
+	echo " -v, -V, --version 	print the version"
+	echo
+	echo "Source:"
+	echo " <file>			file where search aliases"
+	echo " <alias>		search alias"
+}
+
+if [[ $# -lt 1 ]] || [ $# -gt 2 ] || [ $1 = --help ] || [ $1 = -h ]
+then
+	help $0
+	exit 0
+fi
+
+if [ $1 = --version ] || [ $1 = -v ] || [ $1 = -V ]
+then
+	echo "lsalias from $package_name $version"
+	exit 0
+fi
+
+main $@
