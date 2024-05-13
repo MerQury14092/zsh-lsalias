@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-version="1.0"
+version="1.0.1"
 package_name="zsh-lsalias"
 
 
@@ -67,7 +67,7 @@ main() {
 		searching_alias=$2
 	fi
 	start_file=$1
-	if [ $1 = -d ]
+	if [ $1 = -d ] || [ $1 = --default ]
 	then
 		start_file=$HOME/.zshrc
 	fi
